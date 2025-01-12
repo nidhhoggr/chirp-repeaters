@@ -1,5 +1,5 @@
 # Chirp-Repeaters
-  A tool to extract a list of repeaters from repeater book into a Chirp import file
+  A tool to extract a list of repeaters from RepeaterBook into a Chirp import file
 
 ## Author: Joseph Persie
 
@@ -22,5 +22,5 @@
 ```
 
 ### Environment Variables:
-  CACHE: whether or not to use the cached results
-  DEBUG: set debug verbosity (default: 1), set to 0 to disable
+  * `CACHE`: whether or not to use the cached results
+  * `DEBUG`: set debug verbosity (default: 1), set to 0 to disable
