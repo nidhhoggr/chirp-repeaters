@@ -4,21 +4,35 @@
 ## Author: Joseph Persie
 
 ### Usage:
-  State and a Band without a filter:
+
+State and a Band without a filter:
 ```
     CACHE=1 ./chirp-repeaters ID 2m
 ```
-  A State, Band, County and City:
+
+A State, Band, County and City:
 ```
-    CACHE=1 ./chirp-repeaters ID 2m '[{"counties":["Bonner"]},{"cities":["Sandpoint"]}]'
+    CACHE=1 ./chirp-repeaters ID 2m \
+      '[{"counties":["Bonner"]},{"cities":["Sandpoint"]}]'
 ```
-  Using multiple filters using subset exclusivity: (all cities must belong to the counties specified)
+
+Multiple filters using subset exclusivity: (all cities must belong to the counties specified)
 ```
-    CACHE=1 ./chirp-repeaters ID 2m '[{"counties":["Bonner","Kootenai"]},{"cities":["Sandpoint","Athol"]}]'
+    CACHE=1 ./chirp-repeaters ID 2m \
+      '[{"counties":["Bonner","Kootenai"]},{"cities":["Sandpoint","Athol"]}]'
 ```
-  Joining results of multiple filters without subset exclusivity: (filters are not mutual)
+
+Joining results of multiple filters without subset exclusivity: (filters are not mutual)
 ```
-    CACHE=1 ./chirp-repeaters ID,MT 2m,70cm '{"cities": ["Sandpoint","Kalispell"], "counties": ["Kootenai"]}'
+    CACHE=1 ./chirp-repeaters ID,MT 2m,70cm \
+      '{"cities": ["Sandpoint","Kalispell"], "counties": ["Kootenai"]}'
+```
+
+Write the results to an importable Chirp CSV:
+```
+    CACHE=1 ./chirp-repeaters ID 2m \
+      '[{"counties":["Bonner"]},{"cities":["Sandpoint"]}]' \
+      chirp-import.csv
 ```
 
 ### Environment Variables:
