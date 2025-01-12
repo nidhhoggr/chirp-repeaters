@@ -3,12 +3,12 @@ const _ = require('lodash');
 const util = require('util');
 
 function readFile(file) {
-	return fsPromise.readFile(file)
-		.then(data => JSON.parse(data))
+  return fsPromise.readFile(file)
+    .then(data => JSON.parse(data))
 }
 
 function writeFile(file, contents) {
-	return fsPromise.writeFile(file, contents);
+  return fsPromise.writeFile(file, contents);
 }
 
 function jsonify(object) {
@@ -58,8 +58,8 @@ console.nested = function(object) {
 }
 
 module.exports = {
-	readFile,
-	writeFile,
+  readFile,
+  writeFile,
   jsonify,
   sortedUniq,
   debug,
