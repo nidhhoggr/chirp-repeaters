@@ -28,7 +28,7 @@ class RepeaterBook {
     this.config = config;
   }
 
-  getByStateAndBand(props) {
+  getRepeatersByState(props) {
     return this.getResponse(this.getRequestPath(props));
   }
 

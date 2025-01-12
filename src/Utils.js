@@ -19,13 +19,22 @@ function sortedUniq(collection, property) {
   return _.sortedUniq(_.map(_.sortBy(collection, property), property));
 }
 
-function parseArgCSVRequired(position, argName) {
+function parseArgCSVRequired(position, argName, help) {
   const requiredArg = process.argv[position];
   const parsed = _.split(requiredArg,",");
   if (parsed.length == 1 && !parsed[0]) {
+    help && help();
     debug(0)(`Must provide a ${argName}`);
     process.exit(1);
   }
+  return parsed;
+}
+
+function parseArgOptional(position) {
+  let parsed = process.argv[position];
+  try {
+    parsed = JSON.parse(parsed);
+  } catch(err) {}
   return parsed;
 }
 
@@ -55,4 +64,5 @@ module.exports = {
   sortedUniq,
   debug,
   parseArgCSVRequired,
+  parseArgOptional,
 }

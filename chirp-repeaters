@@ -2,66 +2,49 @@
 
 const _ = require("lodash");
 const path = require('path')
-const RepeaterBook = require("./src/RepeaterBook");
-const { sortedUniq, readFile, writeFile, jsonify, debug, parseArgCSVRequired } = require("./src/Utils");
+const RepeaterExtractor = require("./src/RepeaterExtractor");
+const { sortedUniq, readFile, writeFile, jsonify, debug, parseArgCSVRequired, parseArgOptional } = require("./src/Utils");
+
+function help() {
+console.log(`
+Chirp-Repeaters
+  A tool to extract a list of repeaters from repeater book into a Chirp import file
+
+Author: Joseph Persie
+
+Usage:
+  State and a Band without a filter:
+    CACHE=1 ./chirp-repeaters ID 2m
+  A State, Band, County and City:
+    CACHE=1 ./chirp-repeaters ID 2m '[{"counties":["Bonner"]},{"cities":["Sandpoint"]}]'
+  Using multiple filters using subset exclusivity: (all cities must belong to the counties specified)
+    CACHE=1 ./chirp-repeaters ID 2m '[{"counties":["Bonner","Kootenai"]},{"cities":["Sandpoint","Athol"]}]'
+  Joining results of multiple filters without subset exclusivity: (filters are not mutual)
+    CACHE=1 ./chirp-repeaters ID,MT 2m,70cm '{"cities": ["Sandpoint","Kalispell"], "counties": ["Kootenai"]}'
+
+Environment Variables:
+  CACHE: whether or not to use the cached results
+`);
+}
 
 (async () => {
 
-  const config = await readFile(path.resolve(__dirname, "config.json"));
-  
-  const states = parseArgCSVRequired(2, "state");
-  
-  const rb = new RepeaterBook(config.repeater_book);
+  const config = await readFile(path.resolve(__dirname, "config.json"))
 
-  let result;
-
-  if (process.env.MOCK) {
-    const repeaterResultSet = [];
-    for (const state of states) {
-      const file = path.resolve(__dirname, "mocks",`mock.${state}.json`);
-      debug(1)(`Checking mock file: ${file} for state: ${state}`);
-      try {
-        result = await readFile(file);
-      } catch(err) {
-        result = await rb.getByStateAndBand({
-          state,
-        });
-        await writeFile(file, jsonify(result));
-      }
-      console.log(rb.getUniq(result.results));
-      repeaterResultSet.push(result.results);
-    }
-    
-    const bands = parseArgCSVRequired(3, "band");
-
-    const filters = [
-      {bands},
-//      {counties: ["Bonner","Kootenai"]},
-//      {cities: ["Sandpoint"]},//subsequent filters are recursively reduced
-      {cities: ["Sandpoint","Kalispell"], counties: ["Kootenai"]},//same level filters join the data
-    ];
-   
-    let rsResult = repeaterResultSet;
-
-    for (const filter of filters) {
-      const { repeatersMerged, count } = rb.getRepeaters(rsResult, filter);
-      debug(1)(`Got ${count} from filter: ${jsonify(filter)}`);
-      rsResult = [repeatersMerged];
-    }
-
-    rsResult = rsResult[0];
-
-    console.log(_.map(rsResult, rb.getRepeaterString));
-
-    console.log(rsResult.length);
-
-  } else {
-    for (const state of states) {
-      result = await rb.getByStateAndBand({
-        state,
-      });
-      console.log(rb.getUniq(result));
-    };
+  if (process.env.CACHE) {
+    config.use_cache = true;
   }
-  
+
+  const states = parseArgCSVRequired(2, "state", help);
+  const bands = parseArgCSVRequired(3, "band", help);
+  const thirdArg = parseArgOptional(4);
+  let filters = [
+    {bands},
+  ];
+  if (thirdArg && _.isObject(thirdArg)) {
+    filters = _.concat(filters, thirdArg);
+  }
+
+  const re = new RepeaterExtractor(config);
+  re.extract({props: {states, filters}});
 })();
