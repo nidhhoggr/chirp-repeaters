@@ -1,0 +1,66 @@
+#!/usr/bin/env node
+
+const _ = require("lodash");
+const path = require('path')
+const RepeaterBook = require("./src/RepeaterBook");
+const { sortedUniq, readFile, writeFile, jsonify } = require("./src/Utils");
+
+(async () => {
+
+  const config = await readFile(path.resolve(__dirname, "config.json"));
+
+  const statesArg = process.argv[2];
+  const states = _.split(statesArg,",");
+  const bandsArg = process.argv[3]; 
+
+  let debugLevel = 1;
+  if (process.env.DEBUG) {
+    debugLevel = parseInt(process.env.DEBUG);
+  }
+  
+  const debug = (level) => {
+    if (level <= debugLevel) {
+      return function() {
+        console.log("\n", ...arguments);
+      }
+    } else {
+      return () => {}
+    }
+  }
+
+  const opts = {debug};
+
+  const rb = new RepeaterBook(config.repeater_book);
+
+  let result;
+  
+  if (states.length == 1 && !states[0]) {
+    debug(0)("Must provide a state");
+    process.exit(1);
+  }
+
+  if (process.env.MOCK) {
+    for (const state of states) {
+      const file = path.resolve(__dirname, "mocks",`mock.${state}.json`);
+      debug(1)(`Checking mock file: ${file} for state: ${state}`);
+      try {
+        result = await readFile(file);
+      } catch(err) {
+        result = await rb.getByStateAndBand({
+          state,
+        });
+        await writeFile(file, jsonify(result));
+      }
+      console.log(rb.getUniq(result));
+    };
+
+  } else {
+    for (const state of states) {
+      result = await rb.getByStateAndBand({
+        state,
+      });
+      console.log(rb.getUniq(result));
+    };
+  }
+  
+})();
