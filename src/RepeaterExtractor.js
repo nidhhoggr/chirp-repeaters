@@ -36,7 +36,7 @@ class RepeaterExtractor {
           state,
         });
       }
-      console.log(this.rb.getUniq(result.results));
+      debug(1)(this.rb.getUniq(result.results));
       repeaterResultSet.push(result.results);
     }
 
@@ -49,13 +49,7 @@ class RepeaterExtractor {
       filters,
     } = props; 
     
-  //      {counties: ["Bonner","Kootenai"]},
-  //      {cities: ["Sandpoint"]},//subsequent filters are recursively reduced
-  //      {cities: ["Sandpoint","Kalispell"], counties: ["Kootenai"]},//same level filters join the data
-   
     let rsResult = await this.getRepeaterResultSet({props});
-
-    console.log(props, rsResult);
 
     for (const filter of filters) {
       const { repeatersMerged, count } = this.rb.getRepeaters(rsResult, filter);
@@ -63,12 +57,7 @@ class RepeaterExtractor {
       rsResult = [repeatersMerged];
     }
 
-    rsResult = rsResult[0];
-
-    console.log(_.map(rsResult, this.rb.getRepeaterString));
-
-    console.log(rsResult.length);
-
+    return rsResult[0];
   }
 }
 

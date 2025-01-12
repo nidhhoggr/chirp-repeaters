@@ -3,6 +3,8 @@
 const _ = require("lodash");
 const path = require('path')
 const RepeaterExtractor = require("./src/RepeaterExtractor");
+const ChirpTransformer = require("./src/ChirpTransformer");
+const RepeaterBook = require("./src/RepeaterBook");
 const { sortedUniq, readFile, writeFile, jsonify, debug, parseArgCSVRequired, parseArgOptional } = require("./src/Utils");
 
 function help() {
@@ -41,10 +43,34 @@ Environment Variables:
   let filters = [
     {bands},
   ];
-  if (thirdArg && _.isObject(thirdArg)) {
-    filters = _.concat(filters, thirdArg);
+  let csvOutputFile;
+  if (thirdArg) {
+    if (_.isObject(thirdArg)) {
+      filters = _.concat(filters, thirdArg);
+      const fourthArg = parseArgOptional(5);
+      if (fourthArg) {
+        csvOutputFile = fourthArg;
+      }
+    } else {
+      //the third arg might be the csv file
+      csvOutputFile = thirdArg;
+    }
   }
 
   const re = new RepeaterExtractor(config);
-  re.extract({props: {states, filters}});
+  const extracted = await re.extract({props: {states, filters}});
+  debug(1)(_.map(extracted, RepeaterBook.getRepeaterString));
+  if (extracted.length) {
+    const ct = new ChirpTransformer();
+    const csvContents = ct.transform(extracted).toCsv();
+    if (csvOutputFile) {
+      try {
+        await writeFile(csvOutputFile, csvContents);
+        debug(1)(`Contents written to: ${csvOutputFile}`);
+      } catch(err) {
+        console.error(`Could not write to: ${csvOutputFile}`);
+        console.error(err);
+      }
+    }
+  }
 })();

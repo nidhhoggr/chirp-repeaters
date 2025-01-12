@@ -197,7 +197,7 @@ class RepeaterBook {
     };
   }
 
-  getRepeaterString(repeater) {
+  static getRepeaterString(repeater) {
     return `${repeater.Callsign} ${repeater[RepeaterBook.fields.city]} ${repeater[RepeaterBook.fields.county]} ${repeater.State} ${repeater[RepeaterBook.fields.frequency]} (${repeater.band})`;
   }
 
