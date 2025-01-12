@@ -26,6 +26,7 @@ Usage:
 
 Environment Variables:
   CACHE: whether or not to use the cached results
+  DEBUG: set debug verbosity (default: 1), set to 0 to disable
 `);
 }
 
