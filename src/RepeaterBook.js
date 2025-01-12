@@ -1,11 +1,18 @@
 const https = require('https');
-const { sortedUniq } = require("./Utils");
+const { sortedUniq, debug } = require("./Utils");
 const states = require("./states");
+const hash = require('object-hash');
 const _ = require("lodash");
 
 class RepeaterBook {
 
   static states = _.invert(states);
+
+  static fields = {
+    city: "Nearest City",
+    county: "County",
+    frequency: "Frequency"
+  };
 
   static bandRanges = {
     "10m": ["28","29.7"],
@@ -73,9 +80,7 @@ class RepeaterBook {
 
   getUniq(repeaterResult) {
 
-    const { results } = repeaterResult;
-
-    const frequencies = sortedUniq(results, "Frequency");
+    const frequencies = sortedUniq(repeaterResult, RepeaterBook.fields.frequency);
 
     const bandFreqMappings = {};
 
@@ -93,12 +98,109 @@ class RepeaterBook {
     }
 
     return {
-      county: sortedUniq(results, "County"),
-      city: sortedUniq(results, "Nearest City"),
+      county: sortedUniq(repeaterResult, RepeaterBook.fields.county),
+      city: sortedUniq(repeaterResult, RepeaterBook.fields.city),
       bands: _.keys(bandFreqMappings),
       bandsCount: bandFreqMappings,
     }
   }
+
+
+  /**
+   * Loop through the result set
+   * then loop through each repeater to check if it's in
+   * the band(s) filter
+   * the cit(y/ies) filter
+   */
+  getRepeaters(repeaterResultSet, filter) {
+
+    const repeaterMappings = {};
+    const repeatersMerged = [];
+    const repeaterHashes = {};
+
+    const collectIntoMerged = (repeater) => {
+      const repeaterHash = hash(repeater);
+      if (!repeaterHashes[repeaterHash]) {
+        repeaterHashes[repeaterHash] = 1;
+        repeatersMerged.push(repeater);
+      }
+    };
+
+    for (const results of repeaterResultSet) {
+
+      if (_.get(filter, "bands.length", 0) > 0) {
+        for (const band of filter.bands) {
+          const bandRange = RepeaterBook.bandRanges[band]; 
+          for (const repeater of results) {
+            const freq = repeater.Frequency;
+            if (parseFloat(freq) >= parseFloat(bandRange[0]) && parseFloat(freq) <= parseFloat(bandRange[1])) {
+              
+              repeater.band = band;
+              
+              //we have to do this because 1.25m will result in a nested object delimited by the period
+              const bandKey = _.replace(band,'.','_');
+              if (!_.get(repeaterMappings, `bands.${bandKey}`)) {
+                _.set(repeaterMappings, `bands.${bandKey}`, [repeater]);
+              } 
+              else {
+                repeaterMappings.bands[bandKey].push(repeater);
+              }
+              
+              collectIntoMerged(repeater);
+            }
+          }
+        }        
+      }
+ 
+      if (_.get(filter, "counties.length", 0) > 0) {
+        for (const repeater of results) {
+          for (const county of filter.counties) {
+            const rCounty = _.toLower(repeater[RepeaterBook.fields.county]);
+            if (rCounty == _.toLower(county)) {
+              if (!_.get(repeaterMappings, `counties.${rCounty}`)) {
+                _.set(repeaterMappings, `counties.${rCounty}`, [repeater]);
+              } 
+              else {
+                repeaterMappings.counties[rCounty].push(repeater);
+              }
+              
+              collectIntoMerged(repeater);
+            }
+          }
+        }        
+      }
+   
+      if (_.get(filter, "cities.length", 0) > 0) {
+        for (const repeater of results) {
+          for (const city of filter.cities) {
+            const nCity = _.toLower(repeater[RepeaterBook.fields.city]);
+            if (nCity == _.toLower(city)) {
+              if (!_.get(repeaterMappings, `cities.${nCity}`)) {
+                _.set(repeaterMappings, `cities.${nCity}`, [repeater]);
+              } 
+              else {
+                repeaterMappings.cities[nCity].push(repeater);
+              }
+              
+              collectIntoMerged(repeater);
+            }
+          }
+        }        
+      }
+
+    }
+
+    return {
+      repeaterMappings,
+      repeatersMerged,
+      count: repeatersMerged.length,
+    };
+  }
+
+  getRepeaterString(repeater) {
+    return `${repeater.Callsign} ${repeater[RepeaterBook.fields.city]} ${repeater[RepeaterBook.fields.county]} ${repeater.State} ${repeater[RepeaterBook.fields.frequency]} (${repeater.band})`;
+  }
+
 }
 
 module.exports = RepeaterBook;
